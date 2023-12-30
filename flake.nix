@@ -1,5 +1,3 @@
-{ config, lib, pkgs, ... }:
-
 {
  description = "sebnyberg's Neovim flake";
 
@@ -9,13 +7,25 @@
  };
 
  outputs = { self, nixpkgs, flake-utils }:
-  flake-utils.lib.eachDefaultSystem (system:
-    let pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      packages.my-script = pkgs.writeShellScriptBin "my-script" ''
-        #!${pkgs.bash}/bin/bash
-        echo "Hello, world!"
-      '';
-    }
-  );
+  let
+
+    system = "aarch64-darwin";
+    pkgs = nixpkgs.legacyPackages.${system};
+    supportedSystems = [ "aarch64-darwin" ];
+    forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+    nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system;  });
+
+  in {
+    packages = forAllSystems (system:
+      let
+        pkgs = nixpkgsFor.${system};
+      in
+        {
+          default = pkgs.writeShellScriptBin "my-script" ''
+            #!${pkgs.bash}/bin/bash
+            echo "Hello, world!"
+          '';
+        }
+    );
+  };
 }
